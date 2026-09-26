@@ -21,6 +21,7 @@
 
 ### Через Composer (рекомендуется)
 ```bash
+composer config repositories.tikhomirov-wp-content-blocks-plugin git https://github.com/tikhomirov/wp-content-blocks-plugin.git
 composer require tikhomirov/wp-content-blocks-plugin
 ```
 
