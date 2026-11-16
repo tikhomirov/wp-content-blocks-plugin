@@ -10,7 +10,7 @@
  * Author:      Aleksey Tikhomirov
  * Author URI:  https://rwsite.ru
  * License:     GPLv3 or later
-*/
+ */
 
 namespace content_block;
 

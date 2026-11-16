@@ -249,7 +249,7 @@ final class ContentBlock
 
         $content_blocks = get_posts($args);
         foreach ($content_blocks as $content_block) {
-            if (mb_trim($content_block->post_title) == '') {
+            if (trim($content_block->post_title) == '') {
                 $new_content_block_values = [
                     'ID'         => $content_block->ID,
                     'post_title' => __('Content Block', 'content_block') . ' '
@@ -415,7 +415,7 @@ final class ContentBlock
         $html = '';
 
         foreach ($atts as $key => $value) {
-            $key = mb_trim(mb_strtolower($key));
+            $key = trim(mb_strtolower($key));
             if ((mb_substr($key, 0, 3) == 'var') && (mb_strlen($key) > 3)) {
                 if (preg_match('/^[a-z0-9]+$/', $key) === 1) {
                     $this->var_values[$key] = str_replace('\\"', '"', $value);
@@ -428,7 +428,7 @@ final class ContentBlock
         } elseif (isset($atts['slug'])) {
             $html = $this->get_block_by_slug($atts['slug']);
         } elseif (isset($atts['getvar'])) {
-            $var = mb_trim(mb_strtolower($atts['getvar']));
+            $var = trim(mb_strtolower($atts['getvar']));
             if ((mb_substr($var, 0, 3) == 'var') && (mb_strlen($var) > 3)) {
                 if (preg_match('/^[a-z0-9-_]+$/', $var) === 1) {
                     if (isset($this->var_values[$var])) {
@@ -441,7 +441,7 @@ final class ContentBlock
                 $html = esc_html($datetime);
             }
         } elseif (isset($atts['info'])) {
-            $info = mb_strtolower(mb_trim((string) ($atts['info'])));
+            $info = mb_strtolower(trim((string) ($atts['info'])));
             switch ($info) {
                 case 'site-title':
                     $html = esc_html(get_bloginfo('name'));
@@ -469,7 +469,7 @@ final class ContentBlock
 
         if (is_array($vars)) {
             foreach ($vars as $key => $value) {
-                $key = mb_trim(mb_strtolower($key));
+                $key = trim(mb_strtolower($key));
                 if ((mb_substr($key, 0, 3) == 'var') && (mb_strlen($key) > 3)) {
                     if (preg_match('/^[a-z0-9]+$/', $key) === 1) {
                         $this->var_values[$key] = str_replace(
@@ -506,7 +506,7 @@ final class ContentBlock
         if ($para === true) {
             return 'full';
         }
-        $para = mb_strtolower(mb_trim((string) $para));
+        $para = mb_strtolower(trim((string) $para));
         if (in_array($para, [
             '',
             'no-shortcodes',
@@ -634,7 +634,7 @@ final class ContentBlock
 
         if (is_array($vars)) {
             foreach ($vars as $key => $value) {
-                $key = mb_trim(mb_strtolower($key));
+                $key = trim(mb_strtolower($key));
                 if ((mb_substr($key, 0, 3) == 'var') && (mb_strlen($key) > 3)) {
                     if (preg_match('/^[a-z0-9]+$/', $key) === 1) {
                         $this->var_values[$key] = str_replace(
@@ -657,7 +657,7 @@ final class ContentBlock
 
     public function get_clean_slug($slug = '')
     {
-        $slug = mb_trim((string) $slug);
+        $slug = trim((string) $slug);
         if ($slug != '') {
             if (isset($this->content_block_list_by_slug[$slug])) {
                 return $slug;
