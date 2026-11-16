@@ -1,15 +1,16 @@
 {
-  "name": "rwsite/wp-content-blocks-plugin",
-  "description": "WordPress Repeatable Content Blocks plugin",
-  "minimum-stability": "stable",
-  "license": "proprietary",
+  "name": "tikhomirov/wp-content-blocks-plugin",
+  "description": "Легкий WordPress плагин для создания многократных контентных блоков (Repeatable Content Blocks) и их вывода через шорткоды или виджеты.",
   "type": "wordpress-plugin",
+  "license": "GPL-3.0-or-later",
   "authors": [
     {
       "name": "Aleksei Tikhomirov",
-      "email": "alex@rwsite.ru"
+      "email": "alex@rwsite.ru",
+      "homepage": "https://rwsite.ru"
     }
   ],
   "require": {
+    "php": ">=7.4"
   }
 }
