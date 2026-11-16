@@ -1,56 +1,74 @@
 <?php
+
 /**
  * Reusable content block
  */
 
 namespace content_block;
 
-use FLBuilder;
-use SiteOrigin_Panels;
-use Vc_Base;
-use WP_Post;
-use WP_Query;
-
 final class ContentBlock
 {
     protected static $file = null;
+
     protected static $instance;
 
     public $plugin_name;
+
     public $plugin_version;
+
     public $option_name;
+
     public $option_prefix;
+
     public $form_element_prefix;
+
     public $nonce_name;
+
     public $post_type_slug;
+
     public $post_type_label;
+
     public $post_type_labels;
+
     public $post_type_menu_icon;
+
     public $usage_about_page;
+
     public $post_type_shortcode;
 
     public $plugin_file;
+
     public $plugin_path;
+
     public $plugin_url;
+
     public $plugin_basename;
 
     public $circular_block_tracker = [];
+
     public $page_title = '';
+
     public $content_block_list = [];
-    public $content_block_slug_list = array();
-    public $content_block_list_by_slug = array();
-    public $option_values = array();
+
+    public $content_block_slug_list = [];
+
+    public $content_block_list_by_slug = [];
+
+    public $option_values = [];
+
     public $para_list;
-    public $var_values = array();
+
+    public $var_values = [];
+
     public $post;
 
-
-    public static function get_Instance($file = null): ContentBlock
+    public static function get_Instance($file = null): self
     {
-        if (!isset(ContentBlock::$instance)) {
-            ContentBlock::$instance = new ContentBlock($file);
+        if (! isset(self::$instance)) {
+            self::$instance = new self($file);
         }
-        return ContentBlock::$instance;
+
+        return self::$instance;
     }
 
     private function __construct($file = null)
@@ -82,7 +100,7 @@ final class ContentBlock
         $args = [
             'post_type'   => $this->post_type_slug,
             'post_status' => 'publish',
-            'nopaging'    => true
+            'nopaging'    => true,
         ];
 
         $content_blocks = get_posts($args);
@@ -101,15 +119,23 @@ final class ContentBlock
     public function get_para_list()
     {
         $this->para_list = [
-            'none'                     => __('No Paragraph Tags / Run Shortcodes',
-                'content_block'),
-            'no-shortcodes'            => __('No Paragraph Tags / No Shortcodes',
-                'content_block'),
-            'paragraphs'               => __('Add Paragraph Tags / Run Shortcodes',
-                'content_block'),
-            'paragraphs-no-shortcodes' => __('Add Paragraph Tags / No Shortcodes',
-                'content_block'),
-            'full'                     => __('Full Content Filtering', 'content_block'),
+            'none' => __(
+                'No Paragraph Tags / Run Shortcodes',
+                'content_block',
+            ),
+            'no-shortcodes' => __(
+                'No Paragraph Tags / No Shortcodes',
+                'content_block',
+            ),
+            'paragraphs' => __(
+                'Add Paragraph Tags / Run Shortcodes',
+                'content_block',
+            ),
+            'paragraphs-no-shortcodes' => __(
+                'Add Paragraph Tags / No Shortcodes',
+                'content_block',
+            ),
+            'full' => __('Full Content Filtering', 'content_block'),
         ];
     }
 
@@ -118,20 +144,31 @@ final class ContentBlock
      */
     public function add_actions()
     {
-        add_action('init',
-            fn() => load_plugin_textdomain('content_block', false,
-                dirname(plugin_basename($this->plugin_file)).'/languages/')
-        ,2 );
+        add_action(
+            'init',
+            fn () => load_plugin_textdomain(
+                'content_block',
+                false,
+                dirname(plugin_basename($this->plugin_file)) . '/languages/',
+            ),
+            2,
+        );
 
         add_action('init', [$this, 'register_post'], 99);
         add_action('widgets_init', [$this, 'register_widget'], 99);
         add_action('wp_head', [$this, 'do_wp_head']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_scripts']);
         add_filter('pre_get_posts', [$this, 'reorder_list']);
-        add_filter('manage_'.$this->post_type_slug.'_posts_columns',
-            [$this, 'set_column_titles']);
-        add_action('manage_'.$this->post_type_slug.'_posts_custom_column',
-            [$this, 'set_columns'], 10, 2);
+        add_filter(
+            'manage_' . $this->post_type_slug . '_posts_columns',
+            [$this, 'set_column_titles'],
+        );
+        add_action(
+            'manage_' . $this->post_type_slug . '_posts_custom_column',
+            [$this, 'set_columns'],
+            10,
+            2,
+        );
         add_filter('enter_title_here', [$this, 'change_title_text']);
 
         add_shortcode($this->post_type_shortcode, [$this, 'content_block_shortcode']);
@@ -157,13 +194,13 @@ final class ContentBlock
         $allowed_roles = [
             'editor',
             'administrator',
-            'author'
+            'author',
         ];
         $publicly_queryable = array_intersect($allowed_roles, $user->roles);
 
         register_post_type($this->post_type_slug, [
-            'label'                => __('Content Blocks', 'content_block'),
-            'labels'               => [
+            'label'  => __('Content Blocks', 'content_block'),
+            'labels' => [
                 'name'               => __('Content Blocks', 'content_block'),
                 'singular_name'      => $this->post_type_label,
                 'menu_name'          => __('Content Blocks', 'content_block'),
@@ -176,28 +213,30 @@ final class ContentBlock
                 'view_item'          => __('View block', 'content_block'),
                 'search_items'       => __('Search block', 'content_block'),
                 'not_found'          => __('No blocks found', 'content_block'),
-                'not_found_in_trash' => __('No blocks found in the Trash',
-                    'content_block'),
-                'parent_item_colon'  => __('Parent block', 'content_block')
+                'not_found_in_trash' => __(
+                    'No blocks found in the Trash',
+                    'content_block',
+                ),
+                'parent_item_colon' => __('Parent block', 'content_block'),
             ],
-            'public'               => $publicly_queryable,
-            'exclude_from_search'  => true,
-            'publicly_queryable'   => $publicly_queryable,
-            'show_ui'              => true,
-            'show_in_nav_menus'    => false,
-            'show_in_menu'         => true,
-            'show_in_admin_bar'    => true,
-            'menu_icon'            => $this->post_type_menu_icon,
-            'hierarchical'         => false,
-            'supports'             => [
+            'public'              => $publicly_queryable,
+            'exclude_from_search' => true,
+            'publicly_queryable'  => $publicly_queryable,
+            'show_ui'             => true,
+            'show_in_nav_menus'   => false,
+            'show_in_menu'        => true,
+            'show_in_admin_bar'   => true,
+            'menu_icon'           => $this->post_type_menu_icon,
+            'hierarchical'        => false,
+            'supports'            => [
                 'title',
                 'editor',
                 'thumbnail',
-                /*'code_editor'*/
+                /* 'code_editor' */
             ],
             /** @see ContentBlock::meta_box() */
             'register_meta_box_cb' => [$this, 'meta_box'],
-            'has_archive'          => false
+            'has_archive'          => false,
         ]);
 
         flush_rewrite_rules();
@@ -205,16 +244,16 @@ final class ContentBlock
         $args = [
             'post_type'   => $this->post_type_slug,
             'post_status' => 'any',
-            'nopaging'    => true
+            'nopaging'    => true,
         ];
 
         $content_blocks = get_posts($args);
         foreach ($content_blocks as $content_block) {
-            if (trim($content_block->post_title) == '') {
+            if (mb_trim($content_block->post_title) == '') {
                 $new_content_block_values = [
                     'ID'         => $content_block->ID,
-                    'post_title' => __('Content Block', 'content_block').' '
-                        .$content_block->ID
+                    'post_title' => __('Content Block', 'content_block') . ' '
+                        . $content_block->ID,
                 ];
                 wp_update_post($new_content_block_values);
             }
@@ -249,35 +288,26 @@ final class ContentBlock
         return $query;
     }
 
-    /**
-     * @return array
-     */
     public function set_column_titles(): array
     {
         return [
-            'cb'                              => '<input type="checkbox"/>',
-            'title'                           => __('Title', 'content_block'),
-            $this->post_type_slug.'shortcode' => __('Shortcode', 'content_block'),
-            'date'                            => __('Date', 'content_block')
+            'cb'                                => '<input type="checkbox"/>',
+            'title'                             => __('Title', 'content_block'),
+            $this->post_type_slug . 'shortcode' => __('Shortcode', 'content_block'),
+            'date'                              => __('Date', 'content_block'),
         ];
     }
 
-    /**
-     * @param $column
-     * @param $post_id
-     *
-     * @return void
-     */
     public function set_columns($column, $post_id): void
     {
-        $post = WP_Post::get_instance($post_id);
+        $post = \WP_Post::get_instance($post_id);
         switch ($column) {
-            case $this->post_type_slug.'shortcode' :
-                echo '<input type="text" class="cb_read_only_input" value="'.
-                    esc_attr('['.$this->post_type_shortcode.' slug="'
-                        .$post->post_name.'"]').'" />';
+            case $this->post_type_slug . 'shortcode':
+                echo '<input type="text" class="cb_read_only_input" value="' .
+                    esc_attr('[' . $this->post_type_shortcode . ' slug="'
+                        . $post->post_name . '"]') . '" />';
                 break;
-            default :
+            default:
                 break;
         }
     }
@@ -287,21 +317,26 @@ final class ContentBlock
         if ($this->post_type_slug === get_post_type()) {
             return __('Enter block title', 'content_block');
         }
+
         return $title;
     }
 
     /**
-     * @param  WP_Post  $post
-     *
+     * @param  \WP_Post $post
      * @return void
      */
     public function meta_box($post)
     {
         $this->post = $post;
-        add_meta_box($post->ID, __('Block usage', 'content_block'),
-            [$this, 'meta_box_screen'], $this->post_type_slug, 'side',
-            'default');
-        //add_meta_box( 'editor', 'Content', [$this, 'editor_content'], $this->post_type_slug, 'normal', 'default');
+        add_meta_box(
+            $post->ID,
+            __('Block usage', 'content_block'),
+            [$this, 'meta_box_screen'],
+            $this->post_type_slug,
+            'side',
+            'default',
+        );
+        // add_meta_box( 'editor', 'Content', [$this, 'editor_content'], $this->post_type_slug, 'normal', 'default');
     }
 
     public function meta_box_screen($post)
@@ -311,19 +346,19 @@ final class ContentBlock
         if ($this->is_edit_page('edit')) {
             $post_id = $post->ID;
             $post_slug = $post->post_name;
-            $code[] = '['.$this->post_type_shortcode.' id="'.$post_id.'"]';
-            $code[] = '['.$this->post_type_shortcode.' slug="'.$post_slug.'"]';
+            $code[] = '[' . $this->post_type_shortcode . ' id="' . $post_id . '"]';
+            $code[] = '[' . $this->post_type_shortcode . ' slug="' . $post_slug . '"]';
         } else {
             $code['new'] = __('New block', 'content_block');
         }
 
-        if (!isset($code['new'])) {
+        if (! isset($code['new'])) {
             echo '<div class="cb_meta">';
             foreach ($code as $cod) {
                 echo '<div class="cb_meta_field" style="display: grid; margin: 10px 0;">
 			        <input type="text" class="cb_read_only_input" id="'
-                    .esc_attr($this->option_prefix.'access_'.$cod).'" value="'
-                    .esc_attr($cod).'" />
+                    . esc_attr($this->option_prefix . 'access_' . $cod) . '" value="'
+                    . esc_attr($cod) . '" />
                 </div>';
             }
             echo '</div>';
@@ -335,36 +370,40 @@ final class ContentBlock
     public function is_edit_page($new_edit = null)
     {
         global $pagenow;
-        if (!is_admin()) {
+        if (! is_admin()) {
             return false;
         }
 
-        if ($new_edit == "edit") {
+        if ($new_edit == 'edit') {
             return $pagenow == 'post.php';
-        } elseif ($new_edit == "new") {
-            return $pagenow == 'post-new.php';
-        } else {
-            return in_array($pagenow, [
-                'post.php',
-                'post-new.php'
-            ]);
         }
+        if ($new_edit == 'new') {
+            return $pagenow == 'post-new.php';
+        }
+
+        return in_array($pagenow, [
+            'post.php',
+            'post-new.php',
+        ]);
+
     }
 
     public function do_the_content($content)
     {
         if (get_post_type() == $this->post_type_slug) {
             if (class_exists('Vc_Base')) {
-                $vc = new Vc_Base();
+                $vc = new \Vc_Base();
                 $vc->addFrontCss();
             }
         }
 
         if (get_post_type() == $this->post_type_slug) {
             if (class_exists('SiteOrigin_Panels')) {
-                $renderer = SiteOrigin_Panels::renderer();
-                $renderer->add_inline_css(get_the_ID(),
-                    $renderer->generate_css(get_the_ID()));
+                $renderer = \SiteOrigin_Panels::renderer();
+                $renderer->add_inline_css(
+                    get_the_ID(),
+                    $renderer->generate_css(get_the_ID()),
+                );
             }
         }
 
@@ -376,22 +415,21 @@ final class ContentBlock
         $html = '';
 
         foreach ($atts as $key => $value) {
-            $key = trim(strtolower($key));
-            if ((substr($key, 0, 3) == 'var') && (strlen($key) > 3)) {
+            $key = mb_trim(mb_strtolower($key));
+            if ((mb_substr($key, 0, 3) == 'var') && (mb_strlen($key) > 3)) {
                 if (preg_match('/^[a-z0-9]+$/', $key) === 1) {
-                    $this->var_values[$key] = str_replace("\\\"", "\"", $value);
+                    $this->var_values[$key] = str_replace('\\"', '"', $value);
                 }
             }
         }
-
 
         if (isset($atts['id'])) {
             $html = $this->get_block_by_id($atts['id']);
         } elseif (isset($atts['slug'])) {
             $html = $this->get_block_by_slug($atts['slug']);
         } elseif (isset($atts['getvar'])) {
-            $var = trim(strtolower($atts['getvar']));
-            if ((substr($var, 0, 3) == 'var') && (strlen($var) > 3)) {
+            $var = mb_trim(mb_strtolower($atts['getvar']));
+            if ((mb_substr($var, 0, 3) == 'var') && (mb_strlen($var) > 3)) {
                 if (preg_match('/^[a-z0-9-_]+$/', $var) === 1) {
                     if (isset($this->var_values[$var])) {
                         $html = esc_html($this->var_values[$var]);
@@ -403,7 +441,7 @@ final class ContentBlock
                 $html = esc_html($datetime);
             }
         } elseif (isset($atts['info'])) {
-            $info = strtolower(trim(strval($atts['info'])));
+            $info = mb_strtolower(mb_trim((string) ($atts['info'])));
             switch ($info) {
                 case 'site-title':
                     $html = esc_html(get_bloginfo('name'));
@@ -418,13 +456,12 @@ final class ContentBlock
     }
 
     /**
-     * @param  bool  $id
-     * @param  bool  $para
-     * @param  array  $vars
-     *
+     * @param  bool              $id
+     * @param  bool              $para
+     * @param  array             $vars
      * @return mixed|string|void
      */
-    public function get_block_by_id($id = false, $para = false, $vars = array())
+    public function get_block_by_id($id = false, $para = false, $vars = [])
     {
         $html = '';
         $id = $this->get_clean_id($id);
@@ -432,11 +469,14 @@ final class ContentBlock
 
         if (is_array($vars)) {
             foreach ($vars as $key => $value) {
-                $key = trim(strtolower($key));
-                if ((substr($key, 0, 3) == 'var') && (strlen($key) > 3)) {
+                $key = mb_trim(mb_strtolower($key));
+                if ((mb_substr($key, 0, 3) == 'var') && (mb_strlen($key) > 3)) {
                     if (preg_match('/^[a-z0-9]+$/', $key) === 1) {
-                        $this->var_values[$key] = str_replace("\\\"", "\"",
-                            $value);
+                        $this->var_values[$key] = str_replace(
+                            '\\"',
+                            '"',
+                            $value,
+                        );
                     }
                 }
             }
@@ -452,7 +492,7 @@ final class ContentBlock
     public function get_clean_id($id = false)
     {
         if (is_numeric($id) && isset($this->content_block_list[$id])) {
-            return intval($id);
+            return (int) $id;
         }
 
         return false;
@@ -462,25 +502,25 @@ final class ContentBlock
     {
         if ($para === false) {
             return '';
-        } elseif ($para === true) {
+        }
+        if ($para === true) {
             return 'full';
-        } else {
-            $para = strtolower(trim(strval($para)));
-            if (in_array($para, array(
-                '',
-                'no-shortcodes',
-                'yes',
-                'full',
-                'paragraphs',
-                'paragraphs-no-shortcodes'
-            ))
-            ) {
-                if ($para == 'yes') {
-                    $para = 'full';
-                }
-
-                return $para;
+        }
+        $para = mb_strtolower(mb_trim((string) $para));
+        if (in_array($para, [
+            '',
+            'no-shortcodes',
+            'yes',
+            'full',
+            'paragraphs',
+            'paragraphs-no-shortcodes',
+        ])
+        ) {
+            if ($para == 'yes') {
+                $para = 'full';
             }
+
+            return $para;
         }
 
         return '';
@@ -501,23 +541,23 @@ final class ContentBlock
         switch ($para) {
             case 'full':
 
-                $args = array(
+                $args = [
                     'p'           => $id,
                     'post_type'   => $this->post_type_slug,
                     'post_status' => 'publish',
-                    'nopaging'    => true
-                );
+                    'nopaging'    => true,
+                ];
 
                 if (class_exists('FLBuilder')) {
                     ob_start();
-                    FLBuilder::render_query($args);
+                    \FLBuilder::render_query($args);
                     $post_content = ob_get_clean();
                 } else {
-                    $the_query = new WP_Query($args);
+                    $the_query = new \WP_Query($args);
 
                     $original_query = false;
 
-                    if (class_exists('Vc_Base') && (!is_singular())) {
+                    if (class_exists('Vc_Base') && (! is_singular())) {
                         $original_query = $wp_query;
                         $wp_query = $the_query;
                     }
@@ -525,8 +565,10 @@ final class ContentBlock
                     if ($the_query->have_posts()) {
                         while ($the_query->have_posts()) {
                             $the_query->the_post();
-                            $post_content = apply_filters('the_content',
-                                get_the_content());
+                            $post_content = apply_filters(
+                                'the_content',
+                                get_the_content(),
+                            );
                             break;
                         }
                     }
@@ -543,12 +585,12 @@ final class ContentBlock
                 break;
 
             default:
-                $args = array(
+                $args = [
                     'p'           => $id,
                     'post_type'   => $this->post_type_slug,
                     'post_status' => 'publish',
-                    'nopaging'    => true
-                );
+                    'nopaging'    => true,
+                ];
                 $block_post = get_posts($args);
 
                 if (count($block_post) > 0) {
@@ -584,7 +626,7 @@ final class ContentBlock
         return $post_content;
     }
 
-    public function get_block_by_slug($slug = false, $vars = array())
+    public function get_block_by_slug($slug = false, $vars = [])
     {
         $html = '';
 
@@ -592,11 +634,14 @@ final class ContentBlock
 
         if (is_array($vars)) {
             foreach ($vars as $key => $value) {
-                $key = trim(strtolower($key));
-                if ((substr($key, 0, 3) == 'var') && (strlen($key) > 3)) {
+                $key = mb_trim(mb_strtolower($key));
+                if ((mb_substr($key, 0, 3) == 'var') && (mb_strlen($key) > 3)) {
                     if (preg_match('/^[a-z0-9]+$/', $key) === 1) {
-                        $this->var_values[$key] = str_replace("\\\"", "\"",
-                            $value);
+                        $this->var_values[$key] = str_replace(
+                            '\\"',
+                            '"',
+                            $value,
+                        );
                     }
                 }
             }
@@ -612,7 +657,7 @@ final class ContentBlock
 
     public function get_clean_slug($slug = '')
     {
-        $slug = trim(strval($slug));
+        $slug = mb_trim((string) $slug);
         if ($slug != '') {
             if (isset($this->content_block_list_by_slug[$slug])) {
                 return $slug;
@@ -622,40 +667,43 @@ final class ContentBlock
         return false;
     }
 
-
     // Element Mapping
 
     public function integrateWithVC()
     {
         // Check if WPBakery Page Builder is installed
-        if (!defined('WPB_VC_VERSION') ||
-            !defined('WPB_PLUGIN_URL')) {
+        if (! defined('WPB_VC_VERSION') ||
+            ! defined('WPB_PLUGIN_URL')) {
             // Display notice that Extend WPBakery Page Builder is required
             // add_action('admin_notices',  [$this, 'showVcVersionNotice']);
             return;
         }
 
-        vc_map(array(
-            "name"        => __("Content block", 'content_block'),
-            "description" => __("Add content block", 'content_block'),
-            "base"        => $this->post_type_shortcode,
-            "class"       => $this->post_type_shortcode,
-            "controls"    => "full",
-            "icon"        => $this->plugin_url.'assets/img/icon.png',
-            "category"    => __('Content', 'js_composer'),
-            "params"      => array(
-                array(
-                    "type"        => "dropdown",
-                    "holder"      => "div",
-                    "heading"     => __("Select Content Block by slug",
-                        'content_block'),
-                    "param_name"  => "slug",
-                    "value"       => $this->content_block_slug_list,
-                    "description" => __("Select content block to insert on this page",
-                        'content_block')
-                ),
-            )
-        ));
+        vc_map([
+            'name'        => __('Content block', 'content_block'),
+            'description' => __('Add content block', 'content_block'),
+            'base'        => $this->post_type_shortcode,
+            'class'       => $this->post_type_shortcode,
+            'controls'    => 'full',
+            'icon'        => $this->plugin_url . 'assets/img/icon.png',
+            'category'    => __('Content', 'js_composer'),
+            'params'      => [
+                [
+                    'type'    => 'dropdown',
+                    'holder'  => 'div',
+                    'heading' => __(
+                        'Select Content Block by slug',
+                        'content_block',
+                    ),
+                    'param_name'  => 'slug',
+                    'value'       => $this->content_block_slug_list,
+                    'description' => __(
+                        'Select content block to insert on this page',
+                        'content_block',
+                    ),
+                ],
+            ],
+        ]);
     }
 
     // Show notice if your plugin is activated but Visual Composer is not
@@ -664,11 +712,12 @@ final class ContentBlock
         echo '
         <div class="updated">
           <p>'
-            .sprintf(__('<strong>%s</strong> requires <strong><a href="http://bit.ly/vcomposer" target="_blank">WPBakery Page builder</a></strong> plugin to be installed and activated on your site.',
-                'content_block'), $this->post_type_slug).'</p>
+            . sprintf(__(
+                '<strong>%s</strong> requires <strong><a href="http://bit.ly/vcomposer" target="_blank">WPBakery Page builder</a></strong> plugin to be installed and activated on your site.',
+                'content_block',
+            ), $this->post_type_slug) . '</p>
         </div>';
     }
-
 
     public static function plugin_activate()
     {

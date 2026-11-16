@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Plugin Name: Content Blocks
  * Plugin URI:  http://rwsite.ru
@@ -13,7 +14,7 @@
 
 namespace content_block;
 
-defined( 'ABSPATH' ) || die();
+defined('ABSPATH') || exit();
 
 require_once 'includes/ContentBlock.php';
 require_once 'includes/ContentBlockWidget.php';
